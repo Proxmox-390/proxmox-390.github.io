@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proxmox-390 Installer</title>
+<meta name="description" content="Installing Proxmox-390 (Proxmox VE 9 for IBM Z and LinuxONE) with the line-mode installer.">
+<link rel="stylesheet" href="style.css?v=5">
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1><a href="./" class="home">Proxmox-390</a></h1>
+    <p>Installer 9.2 beta 1</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <p class="beta"><strong>Beta.</strong> This installer has been tested as a KVM guest on an IBM z14 (virtio, qeth,
+    emulated FBA and ECKD DASD). Installing directly into an LPAR from the HMC/SE and from the z/VM reader has not been
+    validated yet. Please report how it goes.</p>
+
+  <h2>Download</h2>
+  <ul>
+    <li><a href="https://proxmox-390-apt.legitimatebusiness.be/installer/proxmox-390-installer-9.2-beta1.tar">proxmox-390-installer-9.2-beta1.tar</a> (60 MB)</li>
+    <li><a href="https://proxmox-390-apt.legitimatebusiness.be/installer/SHA256SUMS">SHA256SUMS</a>,
+      <a href="https://proxmox-390-apt.legitimatebusiness.be/installer/SHA256SUMS.asc">SHA256SUMS.asc</a></li>
+  </ul>
+  <p>Verify the download with the Proxmox-390 archive key
+    (<a href="https://proxmox-390-apt.legitimatebusiness.be/proxmox-390-archive-key.asc">key</a>, fingerprint
+    <code>7351 2D07 80FA 2F2B C953&nbsp; B0D1 7129 D5E3 AC17 DD75</code>):</p>
+  <pre><code>gpg --import proxmox-390-archive-key.asc
+gpg --verify SHA256SUMS.asc SHA256SUMS
+sha256sum -c SHA256SUMS</code></pre>
+
+  <h2>What you need</h2>
+  <ul>
+    <li>IBM z14 or later, an LPAR (or z/VM or KVM guest) with at least 4 GB of memory, 16 GB recommended</li>
+    <li>A system disk: FBA DASD (FCP SCSI LUNs: coming soon), 32 GB or more</li>
+    <li>An OSA (qeth) network device with access to the internet, directly or through an HTTP proxy</li>
+  </ul>
+  <p>The installer downloads everything during the installation (Debian from deb.debian.org, Proxmox-390 from its own
+    repository); it does not contain the packages.</p>
+
+  <h2>Contents of the tarball</h2>
+  <table>
+    <tr><th>kernel.img</th><td>Linux kernel</td></tr>
+    <tr><th>initrd.img</th><td>Initial RAM disk with the installer</td></tr>
+    <tr><th>parmfile</th><td>Kernel parameters (one line, at most 895 bytes)</td></tr>
+    <tr><th>initrd.addrsize</th><td>Initrd address and size, for the HMC/SE load</td></tr>
+    <tr><th>proxinst.ins</th><td>Load list for the HMC/SE</td></tr>
+    <tr><th>proxinst.exec</th><td>REXX exec for z/VM</td></tr>
+  </table>
+
+  <h2>Starting the installer</h2>
+  <h3>HMC/SE</h3>
+  <p>Unpack the tarball on an FTP server (or removable media) reachable by the SE. Use <em>Load from Removable Media
+    or Server</em>, point it at the directory and select <code>proxinst.ins</code>. Add your parameters to
+    <code>parmfile</code> first (see below). Open the <em>Operating System Messages</em> console: the installer runs
+    on it.</p>
+  <h3>z/VM</h3>
+  <p>Transfer <code>kernel.img</code> as KERNEL IMG and <code>initrd.img</code> as INITRD IMG (binary, fixed 80),
+    <code>parmfile</code> as PARMFILE PRM and <code>proxinst.exec</code> as PROXINST EXEC (text), then run
+    <code>PROXINST</code>. It punches the files to your reader and IPLs from it.</p>
+  <h3>KVM</h3>
+  <pre><code>qemu-system-s390x -machine s390-ccw-virtio -accel kvm -cpu host -m 4096 \
+  -kernel kernel.img -initrd initrd.img -append "$(cat parmfile) proxinst.…" …</code></pre>
+
+  <h2>Parameters</h2>
+  <p>Put these in <code>parmfile</code> (or on the KVM command line). Without them the installer asks.</p>
+  <table>
+    <tr><th>proxinst.netdev=</th><td>Network device, e.g. <code>0.0.0600</code></td></tr>
+    <tr><th>proxinst.hostname=, proxinst.domain=</th><td>Host name and DNS domain</td></tr>
+    <tr><th>proxinst.ip4=, proxinst.gw4=</th><td><code>dhcp</code>, <code>none</code> or <code>192.0.2.10/24</code>; gateway</td></tr>
+    <tr><th>proxinst.ip6=, proxinst.gw6=</th><td><code>auto</code>, <code>dhcp</code>, <code>none</code> or an address/prefix; gateway</td></tr>
+    <tr><th>proxinst.dns=</th><td>DNS servers, comma separated</td></tr>
+    <tr><th>proxinst.answer=</th><td>URL of an answer file for an unattended install</td></tr>
+    <tr><th>proxinst.proxy=</th><td>HTTP proxy, <code>http://host:port</code></td></tr>
+    <tr><th>proxinst.mirror=, proxinst.security=</th><td>Debian mirror and security mirror</td></tr>
+    <tr><th>proxinst.proxport=</th><td>Proxmox-390 repository (default: the public one)</td></tr>
+    <tr><th>proxinst.ntp=</th><td>NTP servers</td></tr>
+    <tr><th>proxinst.tls-trust-fingerprint=</th><td><code>sha256:…</code> of a certificate to trust (TLS inspection proxies)</td></tr>
+    <tr><th>proxinst.shell</th><td>Start a shell instead of the installer</td></tr>
+  </table>
+  <p>Example:</p>
+  <pre><code>proxinst.netdev=0.0.0600 proxinst.hostname=pve1 proxinst.domain=example.com proxinst.ip4=192.0.2.10/24 proxinst.gw4=192.0.2.1 proxinst.ip6=none proxinst.dns=192.0.2.53</code></pre>
+
+  <h2>Interactive installation</h2>
+  <p>The installer runs on the SCLP line-mode console. It asks, in this order: host name and domain, network
+    interface, IPv4 and IPv6, DNS servers, Debian mirror, security mirror, Proxmox-390 repository and HTTP proxy
+    (defaults are offered; an empty line or <code>.</code> takes the default), then the root password, SSH keys, an
+    administrator e-mail address and the time zone, and finally the disks: system disk, data disks, LVM sizes and an
+    optional ZFS pool. Nothing is written before you type <code>yes</code> at the summary.</p>
+  <p>Notes: the line-mode console echoes what you type, including passwords. Input lines are limited to 251
+    characters; end a line with <code>\</code> to continue it. SSH keys can be given as an https URL of an
+    authorized_keys file. If a certificate check fails (for example behind a TLS inspection proxy), the installer
+    shows the certificate and asks whether to trust it.</p>
+
+  <h2>Unattended installation</h2>
+  <p>Pass <code>proxinst.answer=&lt;url&gt;</code> and provide a TOML answer file. Minimal example:</p>
+  <pre><code>[global]
+fqdn = "pve1.example.com"
+mailto = "admin@example.com"
+timezone = "Europe/Brussels"
+root-password-hashed = "$6$…"
+root-ssh-keys = ["https://example.com/admin.keys"]
+
+[network]
+source = "from-dhcp"
+
+[disk-setup]
+filesystem = "ext4"
+system-disk = "0.0.0100"
+disk-list = ["0.0.0101", "0.0.0102", "0.0.0103"]
+data = "zfs"
+zfs.raid = "raidz-1"</code></pre>
+  <p>Further sections: <code>[install]</code> (mirrors, repository, <code>http-proxy</code>,
+    <code>tls-trust-ca</code>, <code>tls-trust-fingerprint</code>, <code>ntp-servers</code>,
+    <code>extra-packages</code>) and <code>[s390x]</code> (devices to set online, DASD formatting).</p>
+
+  <h2>After the installation</h2>
+  <p>The system re-IPLs from the installed disk by itself. The installer prints the web interface address:
+    <code>https://&lt;address&gt;:8006/</code>, user <code>root</code>, realm <em>Linux PAM</em>. The log of the
+    installation is in <code>/var/log/proxinst.log</code>. Updates come with the usual <code>apt update &amp;&amp;
+    apt full-upgrade</code>.</p>
+
+  <h2>Known limitations</h2>
+  <ul>
+    <li>Tested as a KVM guest on a z14; LPAR (HMC/SE) and z/VM installs not yet validated</li>
+    <li>Installation onto FCP SCSI LUNs is not supported yet</li>
+    <li>Network installation only</li>
+  </ul>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Proxmox-390 is not affiliated with or endorsed by Proxmox Server Solutions GmbH or IBM. Proxmox is a registered
+      trademark of Proxmox Server Solutions GmbH. IBM Z and LinuxONE are trademarks of IBM Corp.</p>
+  </div>
+</footer>
+</body>
+</html>
