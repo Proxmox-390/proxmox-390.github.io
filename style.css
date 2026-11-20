@@ -33,7 +33,7 @@ header p { margin: 4px 0 0; color: #bbb; }
 main { padding-top: 12px; }
 h2 { font-size: 21px; margin: 32px 0 10px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
 h3 { font-size: 16px; margin: 0 0 4px; }
-.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; }
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 24px; }
 .cols ul { margin: 0; padding-left: 20px; }
 table { border-collapse: collapse; }
 th, td { text-align: left; padding: 4px 24px 4px 0; vertical-align: top; }
@@ -41,6 +41,6 @@ th { font-weight: 600; }
 .note, .small { color: var(--muted); }
 .small { font-size: 14px; }
 footer { margin-top: 48px; padding: 16px 0 32px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
-@media (max-width: 560px) {
+@media (max-width: 360px) {
   .cols { grid-template-columns: 1fr; gap: 16px; }
 }
