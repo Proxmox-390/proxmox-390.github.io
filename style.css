@@ -44,3 +44,5 @@ footer { margin-top: 48px; padding: 16px 0 32px; border-top: 1px solid var(--lin
 @media (max-width: 360px) {
   .cols { grid-template-columns: 1fr; gap: 16px; }
 }
+pre { background: var(--line); padding: 10px 12px; overflow-x: auto; font-size: 14px; border-radius: 4px; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
