@@ -4,114 +4,74 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Proxmox-390</title>
-<meta name="description" content="Proxmox-390: Proxmox VE 9 ported to IBM Z and LinuxONE (s390x), with mainframe I/O support: qeth, CKD and FBA DASD, 3270 terminals and SCLP consoles.">
+<meta name="description" content="Proxmox VE 9 for IBM Z and LinuxONE (s390x).">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="hero">
+<header>
   <div class="wrap">
-    <p class="eyebrow">Community port · s390x</p>
     <h1>Proxmox-390</h1>
-    <p class="lead">Proxmox Virtual Environment 9 on IBM&nbsp;Z and LinuxONE: the full Proxmox VE stack, built natively for
-      s390x, with first-class support for mainframe I/O.</p>
-    <p class="status"><span class="dot"></span>Under active development. No public release yet.</p>
+    <p>Proxmox VE 9 for IBM Z and LinuxONE.</p>
   </div>
 </header>
 
 <main class="wrap">
-  <section>
-    <h2>What it is</h2>
-    <p>Proxmox-390 brings the Proxmox VE 9 virtualization platform (Debian 13 "trixie") to the s390x architecture.
-      Every package of the stack is built natively for s390x: the web interface and API, the KVM/QEMU virtual machine
-      manager, LXC containers, ZFS, clustering and backup.</p>
-    <p>On top of that, the port teaches Proxmox VE about the devices and conventions of the mainframe, so that guests
-      which expect real mainframe hardware can be created, run and managed from the familiar Proxmox web interface.</p>
-  </section>
+  <p>Proxmox-390 is a port of Proxmox VE 9 (Debian 13 "trixie") to s390x. The whole stack is built natively: web
+    interface, API, QEMU/KVM, LXC, ZFS, clustering and backup. QEMU and the VM manager have been extended to support
+    mainframe devices, so you can run more than just Linux guests.</p>
+  <p>The project is under development. There is no public release yet.</p>
 
-  <section>
-    <h2>Mainframe features</h2>
-    <div class="grid">
-      <article>
-        <h3>qeth networking</h3>
-        <p>OSA-style qeth network devices for guests, bridged onto Proxmox Linux bridges. qeth devices on the host can
-          be brought online from the node's network panel.</p>
-      </article>
-      <article>
-        <h3>CKD DASD</h3>
-        <p>Count-key-data disks (3390 and 3380 models) with configurable device numbers and device/control-unit types.
-          Volumes can be imported from existing images, live-migrated and snapshotted.</p>
-      </article>
-      <article>
-        <h3>FBA DASD</h3>
-        <p>Fixed-block DASD for guests, and FBA volumes as the system disk of the Proxmox host itself.</p>
-      </article>
-      <article>
-        <h3>3270 terminals</h3>
-        <p>Local 3270 display terminals at the device numbers you choose, shown in the web console with the right model
-          size (model 2 to 5). Sessions stay connected for the lifetime of the VM.</p>
-      </article>
-      <article>
-        <h3>SCLP consoles</h3>
-        <p>The SCLP line-mode console with a persistent, rotated hardcopy log (optionally forwarded to syslog), the SCLP
-          3270 integrated console, and the SCLP ASCII console for Linux guests.</p>
-      </article>
-      <article>
-        <h3>IPL control</h3>
-        <p>IPL from DASD, tape or network with a load parameter, using a dedicated mainframe machine type.</p>
-      </article>
+  <h2>Features</h2>
+  <div class="cols">
+    <div>
+      <h3>Proxmox VE</h3>
+      <ul>
+        <li>Web interface and REST API</li>
+        <li>KVM virtual machines (virtio disk and network)</li>
+        <li>LXC containers, s390x template</li>
+        <li>ZFS and LVM-thin storage</li>
+        <li>Live migration, also with local disks</li>
+        <li>Snapshots, backup and restore</li>
+        <li>OVA import and export</li>
+        <li>Clustering</li>
+      </ul>
     </div>
-  </section>
-
-  <section>
-    <h2>The rest of Proxmox VE</h2>
-    <ul class="ticks">
-      <li>Linux guests with virtio disks and network</li>
-      <li>LXC containers with an s390x container template</li>
-      <li>ZFS and LVM-thin storage</li>
-      <li>Live migration, including local DASD</li>
-      <li>Snapshots, backups and OVA import/export</li>
-      <li>Clustering and the full REST API</li>
-    </ul>
-  </section>
-
-  <section>
-    <h2>System requirements</h2>
-    <p>Only configurations that have actually been verified are listed here.</p>
-    <table>
-      <thead><tr><th>Component</th><th>Requirement</th><th>Status</th></tr></thead>
-      <tbody>
-        <tr><td>Hardware</td><td>IBM z14</td><td><span class="ok">Verified</span></td></tr>
-        <tr><td>System disk</td><td>FBA DASD volumes</td><td><span class="ok">Verified</span></td></tr>
-        <tr><td>System disk</td><td>FCP-attached SCSI LUNs</td><td><span class="soon">Coming soon</span></td></tr>
-        <tr><td>Network</td><td>OSA (qeth) adapter</td><td><span class="ok">Verified</span></td></tr>
-      </tbody>
-    </table>
-  </section>
-
-  <section id="installer">
-    <h2>Installer</h2>
-    <p>Proxmox-390 comes with its own installer, which runs on the SCLP line-mode console and supports both interactive
-      and unattended (answer file) installs. It is IPLed from a small set of files (kernel, initrd and parameter file),
-      not from an ISO.</p>
-    <div class="callout">
-      <strong>Downloads and documentation are coming soon.</strong>
-      <p>Installer downloads and step-by-step installation instructions will be published on this page.</p>
+    <div>
+      <h3>Mainframe</h3>
+      <ul>
+        <li>qeth network devices</li>
+        <li>CKD DASD (3390, 3380)</li>
+        <li>FBA DASD</li>
+        <li>3270 terminals, models 2 to 5</li>
+        <li>SCLP line-mode, 3270 and ASCII consoles</li>
+        <li>Console hardcopy log, syslog forwarding</li>
+        <li>IPL from DASD, tape or network, with loadparm</li>
+        <li>Device numbers and CU/device types per device</li>
+      </ul>
     </div>
-  </section>
+  </div>
 
-  <section>
-    <h2>Source code</h2>
-    <p>The packages of the port live on GitHub in the
-      <a href="https://github.com/Proxmox-390">Proxmox-390 organisation</a>. Changes that are useful beyond s390x are
-      offered back to the upstream projects.</p>
-  </section>
+  <h2>System requirements</h2>
+  <table>
+    <tr><th>Hardware</th><td>IBM z14</td></tr>
+    <tr><th>System disk</th><td>FBA DASD <span class="note">(FCP SCSI LUNs: coming soon)</span></td></tr>
+    <tr><th>Network</th><td>OSA (qeth)</td></tr>
+  </table>
+  <p class="small">Only verified configurations are listed. Other machines and setups may work, but haven't been tested.</p>
+
+  <h2 id="installer">Installer</h2>
+  <p>The installer runs on the SCLP line-mode console and can do interactive and unattended (answer file) installs. It
+    is IPLed from a kernel, initrd and parmfile; there is no ISO.</p>
+  <p>Downloads and installation documentation will be published here.</p>
+
+  <h2>Source</h2>
+  <p>All packages are on GitHub: <a href="https://github.com/Proxmox-390">github.com/Proxmox-390</a>.</p>
 </main>
 
 <footer>
   <div class="wrap">
-    <p>Proxmox-390 is an independent community project. It is not affiliated with, endorsed by or supported by
-      Proxmox Server Solutions GmbH or IBM. Proxmox is a registered trademark of Proxmox Server Solutions GmbH.
-      IBM Z and LinuxONE are trademarks of International Business Machines Corporation.</p>
+    <p>Proxmox-390 is not affiliated with or endorsed by Proxmox Server Solutions GmbH or IBM. Proxmox is a registered
+      trademark of Proxmox Server Solutions GmbH. IBM Z and LinuxONE are trademarks of IBM Corp.</p>
   </div>
 </footer>
 </body>
