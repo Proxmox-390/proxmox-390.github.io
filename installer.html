@@ -11,18 +11,19 @@
 <header>
   <div class="wrap">
     <h1><a href="./" class="home">Proxmox-390</a></h1>
-    <p>Installer 9.2 beta 1</p>
+    <p>Installer 9.2 beta 4</p>
   </div>
 </header>
 
 <main class="wrap">
-  <p class="beta"><strong>Beta.</strong> This installer has been tested as a KVM guest on an IBM z14 (virtio, qeth,
-    emulated FBA and ECKD DASD). Installing directly into an LPAR from the HMC/SE and from the z/VM reader has not been
-    validated yet. Please report how it goes.</p>
+  <p class="beta"><strong>Beta.</strong> This installer has been tested in an LPAR on an IBM z14, loaded from the HMC/SE and
+    installed onto FCP SCSI LUNs with multipath, and as a KVM guest (virtio, qeth, emulated FBA and ECKD DASD). FCP has
+    been tested with one storage target so far, and installing from the z/VM reader has not been validated yet. Please
+    report how it goes.</p>
 
   <h2>Download</h2>
   <ul>
-    <li><a href="https://proxmox-390-apt.legitimatebusiness.be/installer/proxmox-390-installer-9.2-beta1.tar">proxmox-390-installer-9.2-beta1.tar</a> (60 MB)</li>
+    <li><a href="https://proxmox-390-apt.legitimatebusiness.be/installer/proxmox-390-installer-9.2-beta4.tar">proxmox-390-installer-9.2-beta4.tar</a> (60 MB)</li>
     <li><a href="https://proxmox-390-apt.legitimatebusiness.be/installer/SHA256SUMS">SHA256SUMS</a>,
       <a href="https://proxmox-390-apt.legitimatebusiness.be/installer/SHA256SUMS.asc">SHA256SUMS.asc</a></li>
   </ul>
@@ -36,7 +37,8 @@ sha256sum -c SHA256SUMS</code></pre>
   <h2>What you need</h2>
   <ul>
     <li>IBM z14 or later, an LPAR (or z/VM or KVM guest) with at least 16 GB of memory</li>
-    <li>A system disk: FBA DASD (FCP SCSI LUNs: coming soon), 32 GB or more</li>
+    <li>A system disk of 32 GB or more: an FCP SCSI LUN or a DASD (FBA or ECKD). More disks or LUNs can be used for
+      data (LVM or a ZFS pool)</li>
     <li>An OSA (qeth) network device with access to the internet, directly or through an HTTP proxy</li>
   </ul>
   <p>The installer downloads everything during the installation (Debian from deb.debian.org, Proxmox-390 from its own
@@ -80,6 +82,7 @@ sha256sum -c SHA256SUMS</code></pre>
     <tr><th>proxinst.proxport=</th><td>Proxmox-390 repository (default: the public one)</td></tr>
     <tr><th>proxinst.ntp=</th><td>NTP servers</td></tr>
     <tr><th>proxinst.tls-trust-fingerprint=</th><td><code>sha256:…</code> of a certificate to trust (TLS inspection proxies)</td></tr>
+    <tr><th>proxinst.zfcp=</th><td>FCP devices to set online: <code>all</code>, <code>none</code> or device numbers and ranges, comma separated (default: all if there are at most 8)</td></tr>
     <tr><th>proxinst.shell</th><td>Start a shell instead of the installer</td></tr>
   </table>
   <p>Example:</p>
@@ -95,6 +98,21 @@ sha256sum -c SHA256SUMS</code></pre>
     characters; end a line with <code>\</code> to continue it. SSH keys can be given as an https URL of an
     authorized_keys file. If a certificate check fails (for example behind a TLS inspection proxy), the installer
     shows the certificate and asks whether to trust it.</p>
+
+  <h3>FCP SCSI LUNs</h3>
+  <p>The installer lists the FCP devices and sets the selected ones online. With NPIV the LUNs are found by
+    themselves. Without NPIV it asks for the LUNs: it shows the storage ports (WWPNs) it sees and, per port, the LUNs
+    the storage reports, so you can pick them from a list. A LUN can also be typed, as its number at the storage
+    (<code>0x1</code>) or as the full 16-digit FCP LUN (<code>0x0001000000000000</code>); several LUNs go on one line,
+    separated by spaces. <code>r</code> rescans, so a LUN mapped or a port zoned while the installer runs needs no new
+    IPL.</p>
+  <p>Paths to the same LUN are combined with multipath, and the installed system boots from the multipath device.
+    Disks that already hold data (a file system, LVM, a ZFS pool) are marked in the list and are only erased after you
+    type <code>erase</code> for each of them.</p>
+  <p>SCSI WRITE SAME commands are limited to 4096 blocks, in the installer and on the installed system, because some
+    storage rejects larger ones without announcing a limit, which hangs the installation. A lower limit announced by
+    the storage is kept. The limit is set by <code>/etc/udev/rules.d/60-proxmox-390-write-same.rules</code>, which
+    you can change or remove afterwards.</p>
 
   <h2>Unattended installation</h2>
   <p>Pass <code>proxinst.answer=&lt;url&gt;</code> and provide a TOML answer file. Minimal example:</p>
@@ -116,18 +134,25 @@ data = "zfs"
 zfs.raid = "raidz-1"</code></pre>
   <p>Further sections: <code>[install]</code> (mirrors, repository, <code>http-proxy</code>,
     <code>tls-trust-ca</code>, <code>tls-trust-fingerprint</code>, <code>ntp-servers</code>,
-    <code>extra-packages</code>) and <code>[s390x]</code> (devices to set online, DASD formatting).</p>
+    <code>extra-packages</code>) and <code>[s390x]</code> (devices to set online, DASD formatting, and for FCP <code>zfcp-devices</code> and, without
+    NPIV, <code>zfcp-luns = ["0.0.1900:0x500507680b2155c0:0x0000000000000000"]</code>: device number, WWPN and LUN).
+    For a SCSI LUN, <code>system-disk</code> and <code>disk-list</code> take the WWID.</p>
 
   <h2>After the installation</h2>
   <p>The system re-IPLs from the installed disk by itself. The installer prints the web interface address:
     <code>https://&lt;address&gt;:8006/</code>, user <code>root</code>, realm <em>Linux PAM</em>. The log of the
     installation is in <code>/var/log/proxinst.log</code>. Updates come with the usual <code>apt update &amp;&amp;
     apt full-upgrade</code>.</p>
+  <p>Before the re-IPL the installer prints the load parameters of the installed system. For an FCP SCSI LUN these
+    are the load address (FCP device), the WWPN and the LUN of every path, for the HMC/SE Load task, z/VM
+    (<code>SET LOADDEV</code>) and <code>chreipl</code>. Note them: you need them to load the system by hand later.</p>
 
   <h2>Known limitations</h2>
   <ul>
-    <li>Tested as a KVM guest on a z14; LPAR (HMC/SE) and z/VM installs not yet validated</li>
-    <li>Installation onto FCP SCSI LUNs is not supported yet</li>
+    <li>Tested in an LPAR (HMC/SE) and as a KVM guest on a z14; z/VM installs not yet validated</li>
+    <li>FCP SCSI LUNs: tested with one storage target, without NPIV; NPIV and other storage systems not yet validated</li>
+    <li>The HMC/SE <em>Operating System Messages</em> console shows some terminal control sequences as stray
+      characters while the installed system boots; this is harmless</li>
     <li>Network installation only</li>
   </ul>
 </main>
