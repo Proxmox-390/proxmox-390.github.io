@@ -11,7 +11,7 @@
 <header>
   <div class="wrap">
     <h1><a href="./" class="home">Proxmox-390</a></h1>
-    <p>Installer 9.2 beta 4</p>
+    <p>Installer 9.3 beta 5</p>
   </div>
 </header>
 
@@ -21,9 +21,26 @@
     been tested with one storage target so far, and installing from the z/VM reader has not been validated yet. Please
     report how it goes.</p>
 
+  <h2>New in beta 5</h2>
+  <ul>
+    <li>The installed system runs the <strong>Proxmox kernel 7.3</strong> (<code>proxmox-default-kernel</code>)
+      instead of the Debian kernel. The ZFS modules are part of the kernel package: nothing is compiled during the
+      installation or at a kernel update, and no compiler or kernel headers are installed.</li>
+    <li>The boot entries are managed by <code>proxmox-boot-tool</code>: every installed Proxmox kernel gets an entry
+      in <code>/etc/zipl.conf</code>, and the newest one is the default. See
+      <a href="#kernels">Kernels and boot entries</a>.</li>
+    <li>The installer checks that the repository provides the kernel before it installs packages, and that the boot
+      record has a default entry for the installed kernel before it re-IPLs.</li>
+  </ul>
+  <p>Beta 5 has been tested with unattended installations in a KVM guest from the public repository: they install
+    Proxmox VE 9.3 with the Proxmox kernel 7.3. The LPAR installation on FCP SCSI LUNs
+    was tested with beta 4, which installed the Debian kernel; the Proxmox kernel 7.3 itself runs in that LPAR (FCP,
+    multipath, OSA, ZFS). Systems installed with an earlier beta get the Proxmox kernel with a normal
+    <code>apt full-upgrade</code>.</p>
+
   <h2>Download</h2>
   <ul>
-    <li><a href="https://proxmox-390-apt.legitimatebusiness.be/installer/proxmox-390-installer-9.2-beta4.tar">proxmox-390-installer-9.2-beta4.tar</a> (60 MB)</li>
+    <li><a href="https://proxmox-390-apt.legitimatebusiness.be/installer/proxmox-390-installer-9.3-beta5.tar">proxmox-390-installer-9.3-beta5.tar</a> (60 MB)</li>
     <li><a href="https://proxmox-390-apt.legitimatebusiness.be/installer/SHA256SUMS">SHA256SUMS</a>,
       <a href="https://proxmox-390-apt.legitimatebusiness.be/installer/SHA256SUMS.asc">SHA256SUMS.asc</a></li>
   </ul>
@@ -147,12 +164,34 @@ zfs.raid = "raidz-1"</code></pre>
     are the load address (FCP device), the WWPN and the LUN of every path, for the HMC/SE Load task, z/VM
     (<code>SET LOADDEV</code>) and <code>chreipl</code>. Note them: you need them to load the system by hand later.</p>
 
+  <h3 id="kernels">Kernels and boot entries</h3>
+  <p>The system boots through zipl. <code>/etc/zipl.conf</code> ends with a block that <code>proxmox-boot-tool</code>
+    writes: one entry <code>[proxmox-&lt;release&gt;]</code> per installed Proxmox kernel, and the newest one as the
+    default. It is rewritten, and the boot record with it, whenever a kernel is installed or removed. Do not edit the
+    block; the kernel parameters are taken from the <code>[debian]</code> entry above it (change them there, then run
+    <code>proxmox-boot-tool refresh</code>). The entries <code>[debian]</code> and <code>[old]</code> are only used
+    when a Debian kernel is installed as well; without one they are skipped and their numbers 1 and 2 stay free, so
+    the first Proxmox kernel is entry 3.</p>
+  <pre><code>proxmox-boot-tool kernel list                        # kernels and boot entries, the default marked
+proxmox-boot-tool kernel pin &lt;release&gt;               # keep booting this kernel
+proxmox-boot-tool kernel pin &lt;release&gt; --next-boot   # only for the next boot
+proxmox-boot-tool kernel unpin                       # default: the newest kernel again</code></pre>
+  <p>After a kernel update the previous kernel stays installed and keeps its entry. To boot it once, select its
+    entry number when loading: the <em>boot program selector</em> for an FCP SCSI LUN, the <em>load parameter</em>
+    for a DASD (z/VM: <code>IPL &lt;device&gt; LOADPARM &lt;n&gt;</code>), or type the number at the zipl menu on the
+    console, which waits 5 seconds. 0 or blank boots the default. To keep booting it, pin it.</p>
+
   <h2>Known limitations</h2>
   <ul>
     <li>Tested in an LPAR (HMC/SE) and as a KVM guest on a z14; z/VM installs not yet validated</li>
     <li>FCP SCSI LUNs: tested with one storage target, without NPIV; NPIV and other storage systems not yet validated</li>
     <li>The HMC/SE <em>Operating System Messages</em> console shows some terminal control sequences as stray
       characters while the installed system boots; this is harmless</li>
+    <li>Beta 5 has been tested with unattended installations in a KVM guest from the public repository (Proxmox VE
+      9.3, Proxmox kernel 7.3), also over an existing installation; in an LPAR only the kernel itself, not yet a
+      complete beta 5 installation</li>
+    <li>A repository mirror that does not have the Proxmox kernel yet installs the Debian kernel, as beta 4 did, and
+      says so at the end of the installation</li>
     <li>Network installation only</li>
   </ul>
 </main>
